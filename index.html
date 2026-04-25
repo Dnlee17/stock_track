@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>交易帳本</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f0;--bg2:#eceae4;--white:#fff;
+  --border:#dddad2;--border2:#c8c4ba;
+  --text:#1a1916;--text2:#6b6860;--text3:#a8a59e;
+  --accent:#1a56db;--accent-l:#e8f0fe;
+  --green:#0e7f4f;--green-l:#e6f4ee;
+  --red:#c0392b;--red-l:#fdecea;
+  --yellow:#b45309;--yellow-l:#fef3cd;
+  --mono:'Geist Mono',monospace;--sans:'Noto Sans TC',sans-serif;
+  --r:8px;--r2:12px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow2:0 4px 16px rgba(0,0,0,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:15px;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.app{max-width:960px;margin:0 auto;padding:24px 16px 60px;}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 8px rgba(26,86,219,.3);}
+.logo-title{font-size:17px;font-weight:700;color:var(--text);}
+.logo-sub{font-size:11px;color:var(--text3);}
+.header-right{display:flex;align-items:center;gap:10px;}
+.status{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text3);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.dot.ok{background:var(--green);}
+.dot.err{background:var(--red);}
+
+/* MAIN TABS */
+.main-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);}
+.main-tab{padding:10px 18px;font-size:14px;font-weight:500;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
+.main-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.main-tab:hover:not(.active){color:var(--text);}
+
+.page{display:none;}
+.page.active{display:block;}
+
+/* BALANCE CARD */
+.balance-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:4px;box-shadow:var(--shadow);overflow:hidden;}
+.balance-main{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;flex-wrap:wrap;gap:12px;}
+.balance-label{font-size:12px;color:var(--text3);letter-spacing:.04em;margin-bottom:3px;}
+.balance-amount{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--text);}
+.balance-right{display:flex;gap:8px;align-items:center;}
+.toggle-btn{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none;padding:4px 10px;border-radius:5px;transition:background .12s;}
+.toggle-btn:hover{background:var(--accent-l);}
+
+/* SETTLEMENT */
+.settlement-panel{border-top:1px solid var(--border);overflow:hidden;max-height:0;transition:max-height .3s ease;}
+.settlement-panel.open{max-height:500px;}
+.settle-mkt-tabs{display:flex;border-bottom:1px solid var(--border);}
+.settle-mkt-tab{flex:1;padding:8px;font-size:12px;font-weight:500;text-align:center;color:var(--text2);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.settle-mkt-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-l);}
+.settle-content{display:none;}
+.settle-content.active{display:block;}
+.settle-row{display:flex;justify-content:space-between;align-items:center;padding:11px 22px;border-bottom:1px solid var(--border);cursor:pointer;}
+.settle-row:last-child{border-bottom:none;}
+.settle-date{font-size:14px;}
+.settle-amt{font-family:var(--mono);font-size:14px;}
+.settle-amt.pos{color:var(--red);}
+.settle-sub{display:none;background:var(--bg);padding:6px 22px 10px;}
+.settle-sub.open{display:block;}
+.settle-sub-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:3px 0;}
+
+/* MKT TABS */
+.mkt-tabs{display:flex;gap:0;border-radius:var(--r) var(--r) 0 0;overflow:hidden;border:1px solid var(--border);border-bottom:none;width:fit-content;}
+.mkt-tab{padding:9px 22px;font-size:14px;font-weight:500;background:var(--bg2);color:var(--text2);border:none;cursor:pointer;transition:all .15s;border-right:1px solid var(--border);}
+.mkt-tab:last-child{border-right:none;}
+.mkt-tab.active{background:var(--white);color:var(--text);font-weight:600;}
+
+/* HOLDINGS PANEL */
+.holdings-panel{background:var(--white);border:1px solid var(--border);border-radius:0 var(--r) var(--r) var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.holding-row:hover td{background:#fafaf8;}
+td.m{font-family:var(--mono);font-size:13px;}
+td.g{color:var(--green);font-family:var(--mono);font-size:13px;}
+td.r{color:var(--red);font-family:var(--mono);font-size:13px;}
+td.dim{color:var(--text2);}
+.empty-row td{text-align:center;color:var(--text3);padding:36px;font-size:13px;}
+
+/* INLINE DETAIL */
+.detail-row{display:none;}
+.detail-row.open{display:table-row;}
+.detail-row>td{padding:0;background:var(--bg);}
+.detail-inner{padding:10px 14px 14px 28px;}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.detail-actions{display:flex;gap:6px;}
+.lot-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);}
+.lot-table th{background:var(--bg2);font-size:10px;padding:7px 12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);}
+.lot-table td{padding:9px 12px;font-size:13px;font-family:var(--mono);border-bottom:1px solid var(--border);}
+.lot-table tr:last-child td{border-bottom:none;}
+.lot-table .lot-actions{display:flex;gap:4px;justify-content:flex-end;}
+
+/* EXPAND BTN */
+.expand-btn{font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;transition:background .12s;}
+.expand-btn:hover{background:var(--accent-l);}
+.expand-btn .arrow{transition:transform .2s;display:inline-block;font-size:10px;}
+.expand-btn.open .arrow{transform:rotate(180deg);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;}
+.b-buy{background:var(--red-l);color:var(--red);}
+.b-sell{background:var(--green-l);color:var(--green);}
+.b-long{background:var(--red-l);color:var(--red);}
+.b-short{background:var(--green-l);color:var(--green);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
+.btn:hover{background:var(--bg);border-color:var(--text3);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(26,86,219,.25);}
+.btn-primary:hover{background:#1547c0;color:#fff;border-color:#1547c0;}
+.btn-sm{padding:5px 10px;font-size:12px;box-shadow:none;}
+.btn-icon{width:28px;height:28px;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;box-shadow:none;}
+.btn-icon:hover{background:var(--bg2);color:var(--text);}
+.del-icon{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;}
+.del-icon:hover{background:var(--red-l);color:var(--red);border-color:var(--red);}
+.add-icon{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;}
+.add-icon:hover{background:var(--green-l);color:var(--green);border-color:var(--green);}
+
+/* FILTER */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--border);}
+.filter-bar select{background:var(--white);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:5px 9px;outline:none;box-shadow:var(--shadow);}
+.filter-bar select:focus{border-color:var(--accent);}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+@media(min-width:600px){.overlay{align-items:center;padding:16px;}}
+.modal{background:var(--white);border-radius:16px 16px 0 0;padding:22px 18px;width:100%;max-width:480px;transform:translateY(20px);transition:transform .25s cubic-bezier(.34,1.56,.64,1);max-height:92vh;overflow-y:auto;border:1px solid var(--border);box-shadow:var(--shadow2);}
+@media(min-width:600px){.modal{border-radius:16px;transform:scale(.96);}.overlay.open .modal{transform:scale(1);}}
+.overlay.open .modal{transform:translateY(0);}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;}
+@media(min-width:600px){.modal-handle{display:none;}}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:18px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field.s2{grid-column:1/-1;}
+label{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;}
+input,select{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:14px;padding:9px 11px;outline:none;transition:border-color .15s;width:100%;}
+input:focus,select:focus{border-color:var(--accent);background:var(--white);}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+
+/* FEE ROW - editable */
+.fee-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--yellow-l);border-radius:var(--r);border:1px solid #f5d0a9;margin-top:8px;font-size:13px;color:var(--yellow);}
+.fee-row .fee-label{flex:1;}
+.fee-val{font-family:var(--mono);font-weight:600;}
+.fee-edit-input{width:100px;font-size:13px;padding:4px 8px;font-family:var(--mono);}
+
+.sell-preview{padding:10px 12px;background:var(--accent-l);border-radius:var(--r);border:1px solid #c7d9fd;font-size:12px;color:var(--accent);line-height:1.8;margin-top:8px;}
+
+/* PNL PAGE */
+.pnl-year-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.pnl-year-tab{padding:6px 16px;border-radius:20px;border:1px solid var(--border2);background:var(--white);font-size:13px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);}
+.pnl-year-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+.pnl-month-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;}
+.pnl-month-tab{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--white);font-size:12px;cursor:pointer;transition:all .15s;}
+.pnl-month-tab.active{background:var(--text);color:#fff;border-color:var(--text);}
+
+.pnl-mkt-panels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:540px){.pnl-mkt-panels{grid-template-columns:1fr;}}
+.pnl-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow);}
+.pnl-panel-header{padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);display:flex;justify-content:space-between;align-items:center;}
+.pnl-panel-total{font-family:var(--mono);font-size:15px;font-weight:600;}
+
+/* PNL REALIZED LIST */
+.realized-list{max-height:300px;overflow-y:auto;}
+.realized-item{border-bottom:1px solid var(--border);}
+.realized-item:last-child{border-bottom:none;}
+.realized-summary{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;transition:background .12s;}
+.realized-summary:hover{background:var(--bg);}
+.realized-sym{font-weight:600;font-size:14px;}
+.realized-meta{font-size:11px;color:var(--text3);margin-top:1px;}
+.realized-pnl{font-family:var(--mono);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.v-icon{font-size:12px;color:var(--text3);transition:transform .2s;}
+.v-icon.open{transform:rotate(180deg);}
+.realized-detail{display:none;background:var(--bg);padding:8px 14px 12px 28px;}
+.realized-detail.open{display:block;}
+.rd-row{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text2);padding:3px 0;font-family:var(--mono);}
+.rd-label{color:var(--text3);width:32px;}
+
+/* IMPORT */
+.import-box{background:var(--white);border:2px dashed var(--border2);border-radius:var(--r2);padding:28px;text-align:center;margin-bottom:16px;}
+.import-box h3{font-size:15px;font-weight:700;margin-bottom:6px;}
+.import-box p{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow);}
+
+@media(max-width:600px){
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid .field.s2{grid-column:1;}
+  .balance-amount{font-size:20px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    <div>
+      <div class="logo-title">交易帳本</div>
+      <div class="logo-sub">國泰證券</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status"><div class="dot" id="dot"></div><span id="status-txt">連線中</span></div>
+    <button class="btn btn-primary" onclick="openAddTrade()">＋ 新增交易</button>
+  </div>
+</div>
+
+<!-- MAIN TABS -->
+<div class="main-tabs">
+  <button class="main-tab active" onclick="switchMain('holdings')">持倉總覽</button>
+  <button class="main-tab" onclick="switchMain('trades')">交易記錄</button>
+  <button class="main-tab" onclick="switchMain('pnl')">損益統計</button>
+  <button class="main-tab" onclick="switchMain('import')">匯入歷史</button>
+</div>
+
+<!-- ══ HOLDINGS ══ -->
+<div id="page-holdings" class="page active">
+  <!-- Balance -->
+  <div class="balance-card">
+    <div class="balance-main">
+      <div>
+        <div class="balance-label">銀行餘額 (TWD)</div>
+        <div class="balance-amount" id="balance-display">—</div>
+      </div>
+      <div class="balance-right">
+        <button class="toggle-btn" onclick="toggleSettle()">預計交割 ▾</button>
+        <button class="btn btn-sm" onclick="editBalance()">編輯</button>
+      </div>
+    </div>
+    <div class="settlement-panel" id="settle-panel">
+      <div class="settle-mkt-tabs">
+        <button class="settle-mkt-tab active" onclick="switchSettleMkt('tw')">台股</button>
+        <button class="settle-mkt-tab" onclick="switchSettleMkt('us')">美股</button>
+      </div>
+      <div id="sc-tw" class="settle-content active"></div>
+      <div id="sc-us" class="settle-content"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <div class="mkt-tabs" id="hold-mkt-tabs">
+      <button class="mkt-tab active" onclick="switchMkt('tw')">台股</button>
+      <button class="mkt-tab" onclick="switchMkt('us')">美股</button>
+      <button class="mkt-tab" onclick="switchMkt('fu')">期貨</button>
+    </div>
+  </div>
+  <div class="holdings-panel">
+    <div id="mkt-tw">
+      <table><thead><tr><th>代碼</th><th>股數</th><th>成交均價</th><th></th></tr></thead>
+      <tbody id="tw-body"></tbody></table>
+    </div>
+    <div id="mkt-us" style="display:none;">
+      <table><thead><tr><th>代碼</th><th>股數</th><th>成交均價 (US$)</th><th></th></tr></thead>
+      <tbody id="us-body"></tbody></table>
+    </div>
+    <div id="mkt-fu" style="display:none;">
+      <table><thead><tr><th>日期</th><th>商品</th><th>方向</th><th>口數</th><th>成本</th><th>損益(NT)</th><th>備註</th><th></th></tr></thead>
+      <tbody id="fu-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRADES ══ -->
+<div id="page-trades" class="page">
+  <div class="mkt-tabs" id="trade-mkt-tabs">
+    <button class="mkt-tab active" onclick="switchTradeMkt('tw')">台股</button>
+    <button class="mkt-tab" onclick="switchTradeMkt('us')">美股</button>
+    <button class="mkt-tab" onclick="switchTradeMkt('fu')">期貨</button>
+  </div>
+  <div class="holdings-panel" style="border-radius:0 var(--r) var(--r) var(--r);margin-bottom:20px;">
+    <div class="filter-bar">
+      <select id="tr-year" onchange="renderTrades()"><option value="">全部年份</option></select>
+      <select id="tr-month" onchange="renderTrades()">
+        <option value="">全部月份</option>
+        <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+        <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+        <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+        <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+      </select>
+    </div>
+    <div id="trades-tw">
+      <table><thead><tr><th>日期</th><th>代碼</th><th>買/賣</th><th>股數</th><th>成交價</th><th>金額(NT)</th><th>手續費+稅</th><th>App損益(NT)</th><th>FIFO損益(NT)</th><th></th></tr></thead>
+      <tbody id="tr-tw-body"></tbody></table>
+    </div>
+    <div id="trades-us" style="display:none;">
+      <table><thead><tr><th>日期</th><th>代碼</th><th>買/賣</th><th>股數</th><th>成交價(US$)</th><th>金額(NT)</th><th>手續費(US$)</th><th>App損益(NT)</th><th>FIFO損益(NT)</th><th></th></tr></thead>
+      <tbody id="tr-us-body"></tbody></table>
+    </div>
+    <div id="trades-fu" style="display:none;">
+      <table><thead><tr><th>日期</th><th>商品</th><th>方向</th><th>口數</th><th>成本</th><th>損益(NT)</th><th>備註</th><th></th></tr></thead>
+      <tbody id="tr-fu-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PNL ══ -->
+<div id="page-pnl" class="page">
+  <div class="pnl-year-tabs" id="pnl-year-tabs"></div>
+  <div class="pnl-month-tabs" id="pnl-month-tabs"></div>
+  <div class="pnl-mkt-panels" id="pnl-panels"></div>
+</div>
+
+<!-- ══ IMPORT ══ -->
+<div id="page-import" class="page">
+  <div class="import-box">
+    <h3>匯入歷史資料</h3>
+    <p>2024/03 ~ 2026/04 完整記錄（177筆）匯入 Supabase</p>
+    <button class="btn btn-primary" onclick="importHistorical()">🚀 開始匯入 177 筆</button>
+    <div id="import-wrap" style="display:none;margin-top:12px;">
+      <div id="import-msg" style="font-size:12px;color:var(--text2);">準備中...</div>
+      <div class="progress-bar"><div class="progress-fill" id="import-fill"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table><thead><tr><th>資料表</th><th>筆數</th></tr></thead>
+      <tbody id="db-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ══ MODAL: ADD/EDIT TRADE ══ -->
+<div class="overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-add-title">新增交易</div>
+    <div class="form-grid">
+      <div class="field"><label>日期</label><input type="date" id="f-date"></div>
+      <div class="field"><label>市場</label>
+        <select id="f-mkt" onchange="onMktChange()">
+          <option value="台股">台股</option><option value="美股">美股</option><option value="期貨">期貨</option>
+        </select>
+      </div>
+      <div id="stock-fields" style="display:contents;">
+        <div class="field"><label>買/賣</label>
+          <select id="f-type" onchange="onTypeChange()">
+            <option value="買">買入</option><option value="賣">賣出</option>
+          </select>
+        </div>
+        <div class="field"><label>代碼</label><input type="text" id="f-sym" oninput="previewSell()" placeholder="e.g. 鴻海 / ONDS"></div>
+        <div class="field"><label>股數</label><input type="number" id="f-qty" min="0" step="any" oninput="calcFeeAuto()"></div>
+        <div class="field"><label>成交價</label><input type="number" id="f-price" min="0" step="any" oninput="calcFeeAuto()"></div>
+        <div class="field" id="rate-wrap" style="display:none;"><label>匯率</label><input type="number" id="f-rate" placeholder="31.7" step="0.01" oninput="calcFeeAuto()"></div>
+        <div class="field" id="pnl-wrap" style="display:none;"><label>App損益 NT$</label><input type="number" id="f-pnl-nt" step="any"></div>
+        <div class="field s2"><label>手續費</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="f-fee" step="any" placeholder="自動計算" style="flex:1;">
+            <span style="font-size:11px;color:var(--text3);">✏️ 可編輯</span>
+          </div>
+        </div>
+        <div class="field s2" id="tax-wrap" style="display:none;"><label>證交稅 (賣出台股)</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="f-tax" step="any" placeholder="自動計算" style="flex:1;">
+            <span style="font-size:11px;color:var(--text3);">✏️ 可編輯</span>
+          </div>
+        </div>
+      </div>
+      <div id="futures-fields" style="display:none;grid-column:1/-1;">
+        <div class="form-grid">
+          <div class="field"><label>商品</label><input type="text" id="fu-product" placeholder="e.g. 台指期 TX"></div>
+          <div class="field"><label>多/空</label><select id="fu-dir"><option value="多">多單</option><option value="空">空單</option></select></div>
+          <div class="field"><label>口數</label><input type="number" id="fu-qty" min="1" step="1" placeholder="1"></div>
+          <div class="field"><label>成本(NT)</label><input type="number" id="fu-price" step="any" placeholder="22500"></div>
+          <div class="field s2"><label>損益 NT$（平倉後填，留空=持倉中）</label><input type="number" id="fu-pnl" step="any"></div>
+        </div>
+      </div>
+      <div class="field s2"><label>備註（選填）</label><input type="text" id="f-note"></div>
+    </div>
+    <div id="sell-preview" class="sell-preview" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('add')">取消</button>
+      <button class="btn btn-primary" id="modal-add-submit" onclick="submitTrade()">確認新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDIT LOT ══ -->
+<div class="overlay" id="modal-lot">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯持倉批次</div>
+    <input type="hidden" id="lot-trade-id">
+    <div class="form-grid">
+      <div class="field"><label>日期</label><input type="date" id="lot-date"></div>
+      <div class="field"><label>股數</label><input type="number" id="lot-qty" min="0" step="any"></div>
+      <div class="field s2"><label>成交價</label><input type="number" id="lot-price" step="any"></div>
+      <div class="field" id="lot-rate-wrap"><label>匯率</label><input type="number" id="lot-rate" step="0.01"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('lot')">取消</button>
+      <button class="btn btn-primary" onclick="submitLotEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE ───────────────────────────────────────────
+const SB='https://cvhnaqltwixnwurgsvxr.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2aG5hcWx0d2l4bnd1cmdzdnhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Njg1NDMsImV4cCI6MjA5MjU0NDU0M30._MsgWsErri6VB-lJh_oSNJHvo3HJ73fvIDGwK8Ic9xI';
+const H={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+KEY};
+async function api(method,table,body,qs=''){
+  const r=await fetch(`${SB}/rest/v1/${table}${qs?'?'+qs:''}`,{
+    method,headers:{...H,'Prefer':method==='POST'?'return=representation':''},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!r.ok)throw new Error(await r.text());
+  return r.status===204?null:r.json();
+}
+
+// ─── STATE ──────────────────────────────────────────────
+let trades=[],futures=[],balance=0;
+let curMkt='tw',curTradeMkt='tw';
+let settlePanelOpen=false;
+let expandedKey=null;
+let pnlYear='',pnlMonth='';
+let editingTradeId=null; // for lot edit
+
+// ─── UTILS ──────────────────────────────────────────────
+function isWknd(d){return d.getDay()===0||d.getDay()===6;}
+function addBiz(ds,n){
+  let d=new Date(ds+'T00:00:00');
+  for(let i=0;i<n;){d.setDate(d.getDate()+1);if(!isWknd(d))i++;}
+  return d.toISOString().slice(0,10);
+}
+function settleDateOf(t){
+  if(t.market==='台股') return addBiz(t.trade_date,2);
+  if(t.market==='美股') return addBiz(t.trade_date,t.type==='買'?1:2);
+  return null;
+}
+function calcTWFee(qty,price,type){
+  const amt=qty*price;
+  let fee=Math.round(Math.max(1,amt*0.001425*0.28));
+  const tax=type==='賣'?Math.round(amt*0.003):0;
+  return{fee,tax};
+}
+function calcUSFee(qty,price){
+  return{fee:Math.round(qty*price*0.0008*100)/100};
+}
+function fmt(n,dp=0){
+  if(n==null||isNaN(n))return'—';
+  return n.toLocaleString('zh-TW',{minimumFractionDigits:dp,maximumFractionDigits:dp});
+}
+function fmtQty(n){
+  if(n==null||isNaN(n))return'—';
+  if(Math.abs(n-Math.round(n))<0.0001)return Math.round(n).toString();
+  return parseFloat(n.toFixed(4)).toString();
+}
+function fmtP(n){
+  if(n==null||isNaN(n))return'—';
+  return parseFloat(n.toFixed(4)).toString();
+}
+
+// ─── FIFO ───────────────────────────────────────────────
+function computeFIFO(tradeList){
+  const queues={},realized={};
+  const sorted=[...tradeList].sort((a,b)=>a.trade_date.localeCompare(b.trade_date)||a.id-b.id);
+  for(const t of sorted){
+    const key=t.symbol+'__'+t.market;
+    if(!queues[key])queues[key]=[];
+    const ntAmt=Math.abs(t.nt_amount||0)||t.qty*t.price*(t.exchange_rate||1);
+    if(t.type==='買'){
+      queues[key].push({qty:t.qty,nt_per:ntAmt/t.qty,us_per:t.exchange_rate?t.price:null,date:t.trade_date,id:t.id});
+    }else{
+      let rem=t.qty,cost=0,buyLots=[];
+      const snapshot=queues[key].map(l=>({...l}));
+      while(rem>0&&queues[key].length){
+        const lot=queues[key][0];
+        const used=Math.min(rem,lot.qty);
+        cost+=used*lot.nt_per;
+        buyLots.push({date:lot.date,qty:used,price:lot.us_per??lot.nt_per,isUS:lot.us_per!=null});
+        lot.qty-=used;rem-=used;
+        if(lot.qty<0.0001)queues[key].shift();
+      }
+      realized[t.id]={pnl:Math.abs(t.nt_amount||0)-cost,buyLots,sellDate:t.trade_date,sellPrice:t.price,isUS:t.exchange_rate!=null};
+    }
+  }
+  return{queues,realized};
+}
+function getHoldings(){
+  const{queues}=computeFIFO(trades);
+  const out=[];
+  for(const key of Object.keys(queues)){
+    const lots=queues[key].filter(l=>l.qty>0.0001);
+    if(!lots.length)continue;
+    const[sym,mkt]=key.split('__');
+    const totalQty=lots.reduce((s,l)=>s+l.qty,0);
+    const totalNt=lots.reduce((s,l)=>s+l.qty*l.nt_per,0);
+    const avgUs=lots[0].us_per!=null?lots.reduce((s,l)=>s+l.qty*l.us_per,0)/totalQty:null;
+    out.push({symbol:sym,market:mkt,qty:totalQty,avgNt:totalNt/totalQty,avgUs,lots});
+  }
+  return out;
+}
+
+// ─── INIT ───────────────────────────────────────────────
+async function init(){
+  try{
+    await api('GET','trades','','select=count&limit=0');
+    setStatus('ok');
+    const[t,f,b]=await Promise.all([
+      api('GET','trades','','select=*&order=trade_date.asc,id.asc&limit=5000'),
+      api('GET','futures','','select=*&order=trade_date.desc&limit=500').catch(()=>[]),
+      api('GET','settings','','select=*&key=eq.balance').catch(()=>[])
+    ]);
+    trades=t||[];futures=f||[];
+    balance=b&&b[0]?parseFloat(b[0].value)||0:0;
+    populateYears();
+    renderAll();
+  }catch(e){
+    setStatus('err');
+    document.getElementById('balance-display').textContent='連線失敗';
+    console.error(e);
+  }
+}
+function setStatus(s){
+  document.getElementById('dot').className='dot'+(s==='ok'?' ok':s==='err'?' err':'');
+  document.getElementById('status-txt').textContent=s==='ok'?'已連線':s==='err'?'連線失敗':'連線中';
+}
+function populateYears(){
+  const years=[...new Set(trades.map(t=>t.trade_date.slice(0,4)))].sort().reverse();
+  const sel=document.getElementById('tr-year');const cur=sel.value;
+  sel.innerHTML='<option value="">全部年份</option>'+years.map(y=>`<option ${y===cur?'selected':''}>${y}</option>`).join('');
+}
+function renderAll(){
+  renderBalance();
+  renderHoldings();
+  if(settlePanelOpen)renderSettlement();
+}
+
+// ─── BALANCE ────────────────────────────────────────────
+function renderBalance(){
+  document.getElementById('balance-display').textContent=fmt(balance,0);
+}
+async function editBalance(){
+  const v=prompt('輸入銀行帳戶餘額（台幣）',balance.toString());
+  if(v===null)return;
+  const n=parseFloat(v.replace(/,/g,''));
+  if(isNaN(n)){alert('請輸入數字');return;}
+  balance=n;renderBalance();
+  try{await api('POST','settings',[{key:'balance',value:n.toString()}],'on_conflict=key');}
+  catch(e){console.warn('settings table not found');}
+}
+
+// ─── SETTLEMENT ─────────────────────────────────────────
+function getSettleDays(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const days={};
+  for(let i=0;i<8;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    if(!isWknd(d)){const ds=d.toISOString().slice(0,10);days[ds]={tw:[],us:[]};}
+    if(Object.keys(days).length>=4)break;
+  }
+  for(const t of trades){
+    const sd=settleDateOf(t);
+    if(!sd||!(sd in days))continue;
+    const amt=t.nt_amount||0;
+    if(t.market==='台股')days[sd].tw.push({sym:t.symbol,type:t.type,amt});
+    if(t.market==='美股')days[sd].us.push({sym:t.symbol,type:t.type,amt});
+  }
+  return days;
+}
+function renderSettlement(){
+  const days=getSettleDays();
+  const keys=Object.keys(days).sort().slice(0,4);
+  ['tw','us'].forEach(mkt=>{
+    const el=document.getElementById('sc-'+mkt);
+    el.innerHTML=keys.map(ds=>{
+      const items=days[ds][mkt];
+      const total=items.reduce((s,i)=>s+i.amt,0);
+      const sid=`ss-${ds}-${mkt}`;
+      return`<div>
+        <div class="settle-row" onclick="toggleSub('${sid}')">
+          <span class="settle-date">${ds}</span>
+          <span class="settle-amt ${total>0?'pos':total<0?'neg':''}">${total===0?'0':fmt(total,0)}</span>
+        </div>
+        ${items.length?`<div class="settle-sub" id="${sid}">${items.map(i=>`<div class="settle-sub-row"><span>${i.sym} ${i.type==='買'?'扣款':'入帳'}</span><span>${fmt(i.amt,0)}</span></div>`).join('')}</div>`:''}
+      </div>`;
+    }).join('');
+  });
+}
+function toggleSub(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');}
+function toggleSettle(){
+  settlePanelOpen=!settlePanelOpen;
+  document.getElementById('settle-panel').classList.toggle('open',settlePanelOpen);
+  if(settlePanelOpen)renderSettlement();
+}
+function switchSettleMkt(mkt){
+  document.querySelectorAll('.settle-mkt-tab').forEach((t,i)=>t.classList.toggle('active',['tw','us'][i]===mkt));
+  document.querySelectorAll('.settle-content').forEach((c,i)=>c.classList.toggle('active',['tw','us'][i]===mkt));
+}
+
+// ─── HOLDINGS ───────────────────────────────────────────
+function switchMkt(mkt){
+  curMkt=mkt;
+  document.querySelectorAll('#hold-mkt-tabs .mkt-tab').forEach((t,i)=>t.classList.toggle('active',['tw','us','fu'][i]===mkt));
+  document.getElementById('mkt-tw').style.display=mkt==='tw'?'':'none';
+  document.getElementById('mkt-us').style.display=mkt==='us'?'':'none';
+  document.getElementById('mkt-fu').style.display=mkt==='fu'?'':'none';
+  expandedKey=null;
+  renderHoldings();
+}
+function renderHoldings(){
+  const holdings=getHoldings();
+  const tw=holdings.filter(h=>h.market==='台股').sort((a,b)=>a.symbol.localeCompare(b.symbol,'zh-TW'));
+  const us=holdings.filter(h=>h.market==='美股').sort((a,b)=>a.symbol.localeCompare(b.symbol));
+
+  renderHoldingTable('tw',tw,'tw-body',false);
+  renderHoldingTable('us',us,'us-body',true);
+
+  // Futures
+  const fuBody=document.getElementById('fu-body');
+  const openFu=futures.filter(f=>f.pnl_nt==null);
+  if(!openFu.length){fuBody.innerHTML='<tr class="empty-row"><td colspan="8">尚無未平倉期貨</td></tr>';return;}
+  fuBody.innerHTML=openFu.map(f=>`<tr>
+    <td class="m dim">${f.trade_date}</td>
+    <td><strong>${f.product}</strong></td>
+    <td><span class="badge b-${f.direction==='多'?'long':'short'}">${f.direction}單</span></td>
+    <td class="m">${f.qty}</td>
+    <td class="m">${fmt(f.price,0)}</td>
+    <td class="dim">持倉中</td>
+    <td class="dim" style="font-size:12px;">${f.note||'—'}</td>
+    <td><button class="del-icon" onclick="deleteFuture(${f.id})">✕</button></td>
+  </tr>`).join('');
+}
+function renderHoldingTable(mkt,holdings,bodyId,isUS){
+  const tbody=document.getElementById(bodyId);
+  if(!holdings.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="4">無${isUS?'美股':'台股'}持倉</td></tr>`;return;}
+  let html='';
+  for(const h of holdings){
+    const key=h.symbol+'_'+mkt;
+    const isOpen=expandedKey===key;
+    const avgDisplay=isUS&&h.avgUs!=null?fmtP(h.avgUs):fmt(h.avgNt,2);
+    html+=`<tr class="holding-row" id="hr-${mkt}-${h.symbol}">
+      <td><strong>${h.symbol}</strong></td>
+      <td class="m">${fmtQty(h.qty)}</td>
+      <td class="m">${avgDisplay}</td>
+      <td style="text-align:right;padding-right:12px;">
+        <button class="expand-btn ${isOpen?'open':''}" id="eb-${mkt}-${h.symbol}" onclick="toggleDetail('${h.symbol}','${mkt}')">
+          明細 <span class="arrow">▾</span>
+        </button>
+      </td>
+    </tr>
+    <tr class="detail-row ${isOpen?'open':''}" id="dr-${mkt}-${h.symbol}">
+      <td colspan="4">${renderDetailInner(h,mkt,isUS)}</td>
+    </tr>`;
+  }
+  tbody.innerHTML=html;
+}
+function renderDetailInner(h,mkt,isUS){
+  const lotsHtml=h.lots.map(l=>`<tr>
+    <td>${l.date}</td>
+    <td>${fmtQty(l.qty)}</td>
+    <td>${isUS&&l.us_per!=null?fmtP(l.us_per):fmt(l.nt_per,2)}</td>
+    <td>
+      <div class="lot-actions">
+        <button class="btn-icon" onclick="openLotEdit(${l.id},'${mkt}')" title="編輯">✏️</button>
+        <button class="del-icon" onclick="deleteLot(${l.id},'${h.symbol}','${mkt}')" title="刪除此批">✕</button>
+      </div>
+    </td>
+  </tr>`).join('');
+  return`<div class="detail-inner">
+    <div class="detail-header">
+      <span style="font-size:12px;color:var(--text2);">${h.symbol} · ${h.lots.length} 批未賣出</span>
+      <button class="add-icon" onclick="openAddForSym('${h.symbol}','${mkt==='tw'?'台股':'美股'}')" title="新增此股買入">＋</button>
+    </div>
+    <table class="lot-table">
+      <thead><tr><th>日期</th><th>股數</th><th>${isUS?'成交價(US$)':'成交價'}</th><th></th></tr></thead>
+      <tbody>${lotsHtml}</tbody>
+    </table>
+  </div>`;
+}
+function toggleDetail(sym,mkt){
+  const key=sym+'_'+mkt;
+  if(expandedKey===key){
+    document.getElementById(`dr-${mkt}-${sym}`).classList.remove('open');
+    document.getElementById(`eb-${mkt}-${sym}`).classList.remove('open');
+    expandedKey=null;
+  }else{
+    if(expandedKey){
+      const[ps,pm]=expandedKey.split('_');
+      document.getElementById(`dr-${pm}-${ps}`)?.classList.remove('open');
+      document.getElementById(`eb-${pm}-${ps}`)?.classList.remove('open');
+    }
+    expandedKey=key;
+    document.getElementById(`dr-${mkt}-${sym}`).classList.add('open');
+    document.getElementById(`eb-${mkt}-${sym}`).classList.add('open');
+  }
+}
+
+// ─── LOT EDIT ───────────────────────────────────────────
+function openLotEdit(tradeId,mkt){
+  const t=trades.find(t=>t.id===tradeId);
+  if(!t)return;
+  editingTradeId=tradeId;
+  document.getElementById('lot-trade-id').value=tradeId;
+  document.getElementById('lot-date').value=t.trade_date;
+  document.getElementById('lot-qty').value=t.qty;
+  document.getElementById('lot-price').value=t.price;
+  const rw=document.getElementById('lot-rate-wrap');
+  rw.style.display=mkt==='us'?'':'none';
+  document.getElementById('lot-rate').value=t.exchange_rate||'';
+  document.getElementById('modal-lot').classList.add('open');
+}
+async function submitLotEdit(){
+  const id=parseInt(document.getElementById('lot-trade-id').value);
+  const date=document.getElementById('lot-date').value;
+  const qty=parseFloat(document.getElementById('lot-qty').value);
+  const price=parseFloat(document.getElementById('lot-price').value);
+  const rate=parseFloat(document.getElementById('lot-rate').value)||null;
+  if(!date||!qty||!price){alert('請填寫所有欄位');return;}
+  const t=trades.find(t=>t.id===id);
+  if(!t)return;
+  const ntAmt=t.market==='台股'?-qty*price:-qty*price*(rate||31.7);
+  const usAmt=t.market==='美股'?-qty*price:null;
+  try{
+    await api('PATCH','trades',{trade_date:date,qty,price,nt_amount:ntAmt,us_amount:usAmt,exchange_rate:rate},`id=eq.${id}`);
+    const idx=trades.findIndex(t=>t.id===id);
+    if(idx>=0)trades[idx]={...trades[idx],trade_date:date,qty,price,nt_amount:ntAmt,us_amount:usAmt,exchange_rate:rate};
+    closeModal('lot');
+    expandedKey=null;
+    renderAll();
+  }catch(e){alert('儲存失敗：'+e.message);}
+}
+async function deleteLot(id,sym,mkt){
+  if(!confirm(`確定刪除此批買入記錄？`))return;
+  await api('DELETE','trades','',`id=eq.${id}`);
+  trades=trades.filter(t=>t.id!==id);
+  expandedKey=null;
+  renderAll();
+  if(document.querySelector('.page.active').id==='page-trades')renderTrades();
+}
+function openAddForSym(sym,market){
+  openAddTrade();
+  document.getElementById('f-mkt').value=market;
+  document.getElementById('f-sym').value=sym;
+  document.getElementById('f-type').value='買';
+  onMktChange();
+}
+
+// ─── TRADES PAGE ────────────────────────────────────────
+function switchTradeMkt(mkt){
+  curTradeMkt=mkt;
+  document.querySelectorAll('#trade-mkt-tabs .mkt-tab').forEach((t,i)=>t.classList.toggle('active',['tw','us','fu'][i]===mkt));
+  document.getElementById('trades-tw').style.display=mkt==='tw'?'':'none';
+  document.getElementById('trades-us').style.display=mkt==='us'?'':'none';
+  document.getElementById('trades-fu').style.display=mkt==='fu'?'':'none';
+  renderTrades();
+}
+function renderTrades(){
+  const year=document.getElementById('tr-year').value;
+  const month=document.getElementById('tr-month').value;
+  const mkt=curTradeMkt;
+  const{realized}=computeFIFO(trades);
+
+  if(mkt==='fu'){
+    let list=[...futures].sort((a,b)=>b.trade_date.localeCompare(a.trade_date));
+    if(year)list=list.filter(f=>f.trade_date.startsWith(year));
+    if(month)list=list.filter(f=>f.trade_date.slice(5,7)===month);
+    const tbody=document.getElementById('tr-fu-body');
+    tbody.innerHTML=list.length?list.map(f=>{
+      const pnlCell=f.pnl_nt!=null?`<td class="${f.pnl_nt>=0?'g':'r'}">${f.pnl_nt>=0?'+':''}${fmt(f.pnl_nt,0)}</td>`:'<td class="dim">持倉中</td>';
+      return`<tr><td class="m dim">${f.trade_date}</td><td><strong>${f.product}</strong></td>
+        <td><span class="badge b-${f.direction==='多'?'long':'short'}">${f.direction}單</span></td>
+        <td class="m">${f.qty}</td><td class="m">${fmt(f.price,0)}</td>
+        ${pnlCell}<td class="dim" style="font-size:12px;">${f.note||'—'}</td>
+        <td><button class="del-icon" onclick="deleteFuture(${f.id})">✕</button></td></tr>`;
+    }).join(''):'<tr class="empty-row"><td colspan="8">無記錄</td></tr>';
+    return;
+  }
+
+  const mktLabel=mkt==='tw'?'台股':'美股';
+  let list=trades.filter(t=>t.market===mktLabel).sort((a,b)=>b.trade_date.localeCompare(a.trade_date)||b.id-a.id);
+  if(year)list=list.filter(t=>t.trade_date.startsWith(year));
+  if(month)list=list.filter(t=>t.trade_date.slice(5,7)===month);
+
+  const bodyId=mkt==='tw'?'tr-tw-body':'tr-us-body';
+  const tbody=document.getElementById(bodyId);
+  if(!list.length){tbody.innerHTML='<tr class="empty-row"><td colspan="10">無記錄</td></tr>';return;}
+  tbody.innerHTML=list.map(t=>{
+    const rv=realized[t.id];
+    const fifo=rv?rv.pnl:undefined;
+    const appPnl=t.pnl_nt_app;
+    const ntAmt=t.nt_amount;
+    let feeStr='';
+    if(mkt==='tw'){const f=calcTWFee(t.qty,t.price,t.type);feeStr=fmt(f.fee+(f.tax||0),0);}
+    else{const f=calcUSFee(t.qty,t.price);feeStr='$'+fmt(f.fee,2);}
+    return`<tr>
+      <td class="m dim">${t.trade_date}</td>
+      <td><strong>${t.symbol}</strong></td>
+      <td><span class="badge ${t.type==='買'?'b-buy':'b-sell'}">${t.type}</span></td>
+      <td class="m">${fmtQty(t.qty)}</td>
+      <td class="m">${fmtP(t.price)}</td>
+      <td class="m">${ntAmt!=null?fmt(Math.abs(ntAmt),0):'—'}</td>
+      <td class="m dim">${feeStr}</td>
+      <td class="${appPnl!=null?(appPnl>=0?'g':'r'):''}">${appPnl!=null?(appPnl>=0?'+':'')+fmt(appPnl,0):'—'}</td>
+      <td class="${fifo!=null?(fifo>=0?'g':'r'):''}">${fifo!=null?(fifo>=0?'+':'')+fmt(fifo,0):'—'}</td>
+      <td><button class="del-icon" onclick="deleteTrade(${t.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── PNL PAGE ───────────────────────────────────────────
+function renderPnl(){
+  const{realized}=computeFIFO(trades);
+  const years=[...new Set(trades.map(t=>t.trade_date.slice(0,4)))].sort().reverse();
+
+  // Year tabs
+  const ytContainer=document.getElementById('pnl-year-tabs');
+  ytContainer.innerHTML=['', ...years].map(y=>`
+    <button class="pnl-year-tab ${pnlYear===y?'active':''}" onclick="setPnlYear('${y}')">${y||'全部'}</button>
+  `).join('');
+
+  // Filter by year first to get available months
+  let filtered=trades;
+  if(pnlYear)filtered=filtered.filter(t=>t.trade_date.startsWith(pnlYear));
+  const months=[...new Set(filtered.map(t=>t.trade_date.slice(5,7)))].sort();
+
+  // Month tabs
+  const mtContainer=document.getElementById('pnl-month-tabs');
+  mtContainer.innerHTML=['', ...months].map(m=>`
+    <button class="pnl-month-tab ${pnlMonth===m?'active':''}" onclick="setPnlMonth('${m}')">${m?m.replace(/^0/,'')+'月':'全部'}</button>
+  `).join('');
+
+  // Apply month filter
+  let sells=trades.filter(t=>t.type==='賣');
+  if(pnlYear)sells=sells.filter(t=>t.trade_date.startsWith(pnlYear));
+  if(pnlMonth)sells=sells.filter(t=>t.trade_date.slice(5,7)===pnlMonth);
+
+  const twSells=sells.filter(t=>t.market==='台股');
+  const usSells=sells.filter(t=>t.market==='美股');
+  const fuAll=futures.filter(f=>f.pnl_nt!=null);
+  const fuFiltered=pnlYear?fuAll.filter(f=>f.trade_date.startsWith(pnlYear)):fuAll;
+  const fuMonth=pnlMonth?fuFiltered.filter(f=>f.trade_date.slice(5,7)===pnlMonth):fuFiltered;
+
+  const twTotal=twSells.reduce((s,t)=>s+(t.pnl_nt_app||0),0);
+  const usTotal=usSells.reduce((s,t)=>s+(t.pnl_nt_app||0),0);
+  const fuTotal=fuMonth.reduce((s,f)=>s+(f.pnl_nt||0),0);
+
+  const panels=document.getElementById('pnl-panels');
+  panels.innerHTML=`
+    ${renderPnlPanel('台股',twSells,twTotal,realized,false)}
+    ${renderPnlPanel('美股',usSells,usTotal,realized,true)}
+  `;
+
+  // Futures mini panel if any
+  if(fuMonth.length){
+    panels.innerHTML+=`<div class="pnl-panel" style="grid-column:1/-1;">
+      <div class="pnl-panel-header">
+        <span>期貨</span>
+        <span class="pnl-panel-total ${fuTotal>=0?'g':''}" style="color:${fuTotal>=0?'var(--green)':'var(--red)'};">${fuTotal>=0?'+':''}${fmt(fuTotal,0)}</span>
+      </div>
+      <div class="realized-list">${fuMonth.map(f=>`<div class="realized-item">
+        <div class="realized-summary">
+          <div><div class="realized-sym">${f.product}</div><div class="realized-meta">${f.trade_date} · ${f.direction}單 ${f.qty}口</div></div>
+          <div class="realized-pnl" style="color:${(f.pnl_nt||0)>=0?'var(--green)':'var(--red)'};">${(f.pnl_nt||0)>=0?'+':''}${fmt(f.pnl_nt,0)}</div>
+        </div>
+      </div>`).join('')}</div>
+    </div>`;
+  }
+}
+function renderPnlPanel(label,sellList,total,realized,isUS){
+  const items=sellList.map(t=>{
+    const rv=realized[t.id];
+    const fifo=rv?rv.pnl:null;
+    const bid=`rd-${t.id}`;
+    const lotsHtml=rv?rv.buyLots.map(l=>`<div class="rd-row"><span class="rd-label">買</span><span>${l.date}</span><span>${fmtQty(l.qty)}股</span><span>@${isUS?fmtP(l.price):fmt(l.price,2)}</span></div>`).join(''):'';
+    return`<div class="realized-item">
+      <div class="realized-summary" onclick="toggleRD('${bid}')">
+        <div>
+          <div class="realized-sym">${t.symbol}</div>
+          <div class="realized-meta">${t.trade_date} · ${fmtQty(t.qty)}股 @${isUS?fmtP(t.price):fmt(t.price,2)}</div>
+        </div>
+        <div class="realized-pnl" style="color:${(t.pnl_nt_app||0)>=0?'var(--green)':'var(--red)'};">
+          ${(t.pnl_nt_app||0)>=0?'+':''}${fmt(t.pnl_nt_app||0,0)}
+          <span class="v-icon" id="vi-${bid}">▾</span>
+        </div>
+      </div>
+      <div class="realized-detail" id="${bid}">
+        ${lotsHtml}
+        <div class="rd-row"><span class="rd-label">賣</span><span>${t.trade_date}</span><span>${fmtQty(t.qty)}股</span><span>@${isUS?fmtP(t.price):fmt(t.price,2)}</span></div>
+        ${fifo!=null?`<div class="rd-row" style="color:var(--text3);"><span class="rd-label">FIFO</span><span style="color:${fifo>=0?'var(--green)':'var(--red)'};">${fifo>=0?'+':''}${fmt(fifo,0)} NT</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  return`<div class="pnl-panel">
+    <div class="pnl-panel-header">
+      <span>${label}</span>
+      <span class="pnl-panel-total" style="color:${total>=0?'var(--green)':'var(--red)'};">${total>=0?'+':''}${fmt(total,0)}</span>
+    </div>
+    <div class="realized-list">${items||'<div style="padding:20px;text-align:center;font-size:13px;color:var(--text3);">無已實現損益</div>'}</div>
+  </div>`;
+}
+function toggleRD(id){
+  const el=document.getElementById(id);
+  const vi=document.getElementById('vi-'+id);
+  if(!el)return;
+  el.classList.toggle('open');
+  vi?.classList.toggle('open',el.classList.contains('open'));
+}
+function setPnlYear(y){pnlYear=y;pnlMonth='';renderPnl();}
+function setPnlMonth(m){pnlMonth=m;renderPnl();}
+
+// ─── MODAL ──────────────────────────────────────────────
+function openAddTrade(){
+  editingTradeId=null;
+  document.getElementById('modal-add-title').textContent='新增交易';
+  document.getElementById('modal-add-submit').textContent='確認新增';
+  document.getElementById('modal-add').classList.add('open');
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  onMktChange();
+}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+function onMktChange(){
+  const mkt=document.getElementById('f-mkt').value;
+  const isFu=mkt==='期貨';
+  document.getElementById('stock-fields').style.display=isFu?'none':'contents';
+  document.getElementById('futures-fields').style.display=isFu?'block':'none';
+  if(!isFu){
+    document.getElementById('rate-wrap').style.display=mkt==='美股'?'':'none';
+    onTypeChange();
+  }
+  document.getElementById('sell-preview').style.display='none';
+  document.getElementById('f-fee').value='';
+  document.getElementById('f-tax').value='';
+}
+function onTypeChange(){
+  const t=document.getElementById('f-type').value;
+  const mkt=document.getElementById('f-mkt').value;
+  document.getElementById('pnl-wrap').style.display=t==='賣'?'':'none';
+  document.getElementById('tax-wrap').style.display=(t==='賣'&&mkt==='台股')?'':'none';
+  previewSell();calcFeeAuto();
+}
+function calcFeeAuto(){
+  const mkt=document.getElementById('f-mkt').value;
+  const qty=parseFloat(document.getElementById('f-qty').value)||0;
+  const price=parseFloat(document.getElementById('f-price').value)||0;
+  const type=document.getElementById('f-type').value;
+  if(!qty||!price||mkt==='期貨')return;
+  if(mkt==='台股'){
+    const{fee,tax}=calcTWFee(qty,price,type);
+    document.getElementById('f-fee').value=fee;
+    if(type==='賣')document.getElementById('f-tax').value=tax;
+  }else{
+    const{fee}=calcUSFee(qty,price);
+    document.getElementById('f-fee').value=fee;
+  }
+}
+function previewSell(){
+  const type=document.getElementById('f-type').value;
+  const sym=document.getElementById('f-sym').value.trim();
+  const mkt=document.getElementById('f-mkt').value;
+  const prev=document.getElementById('sell-preview');
+  if(!sym||type!=='賣'){prev.style.display='none';return;}
+  const{queues}=computeFIFO(trades);
+  const key=sym+'__'+mkt;
+  const lots=(queues[key]||[]).filter(l=>l.qty>0.0001);
+  if(!lots.length){prev.style.display='none';return;}
+  const totalQty=lots.reduce((s,l)=>s+l.qty,0);
+  const totalNt=lots.reduce((s,l)=>s+l.qty*l.nt_per,0);
+  const avgUs=mkt==='美股'&&lots[0].us_per?lots.reduce((s,l)=>s+l.qty*l.us_per,0)/totalQty:null;
+  prev.style.display='block';
+  prev.innerHTML=`可賣：<strong>${fmtQty(totalQty)}</strong> 股 &nbsp;·&nbsp; 均價：<strong>${mkt==='美股'&&avgUs?'US$'+fmtP(avgUs):'NT'+fmt(totalNt/totalQty,2)}</strong> &nbsp;·&nbsp; ${lots.length} 批`;
+}
+
+async function submitTrade(){
+  const mkt=document.getElementById('f-mkt').value;
+  const date=document.getElementById('f-date').value;
+  const note=document.getElementById('f-note').value;
+  if(!date){alert('請選擇日期');return;}
+
+  if(mkt==='期貨'){
+    const product=document.getElementById('fu-product').value.trim();
+    const dir=document.getElementById('fu-dir').value;
+    const qty=parseInt(document.getElementById('fu-qty').value)||1;
+    const price=parseFloat(document.getElementById('fu-price').value)||0;
+    const pnlVal=document.getElementById('fu-pnl').value;
+    const pnl=pnlVal!==''?parseFloat(pnlVal):null;
+    if(!product){alert('請填寫商品名稱');return;}
+    const[r]=await api('POST','futures',[{trade_date:date,product,direction:dir,qty,price,pnl_nt:pnl,note}]);
+    futures.unshift(r);closeModal('add');clearFuForm();
+    if(curMkt==='fu')renderHoldings();
+    if(curTradeMkt==='fu')renderTrades();
+    return;
+  }
+
+  const sym=document.getElementById('f-sym').value.trim();
+  const type=document.getElementById('f-type').value;
+  const qty=parseFloat(document.getElementById('f-qty').value);
+  const price=parseFloat(document.getElementById('f-price').value);
+  const rate=parseFloat(document.getElementById('f-rate').value)||null;
+  const pnlNt=parseFloat(document.getElementById('f-pnl-nt').value)||null;
+  const feeVal=parseFloat(document.getElementById('f-fee').value)||0;
+  const taxVal=parseFloat(document.getElementById('f-tax').value)||0;
+  if(!sym||!qty||!price){alert('請填寫代碼、股數、成交價');return;}
+  if(type==='賣'){
+    const{queues}=computeFIFO(trades);
+    const avail=(queues[sym+'__'+mkt]||[]).reduce((s,l)=>s+l.qty,0);
+    if(qty>avail+0.0001){alert(`可賣數量不足！持有 ${fmtQty(avail)} 股`);return;}
+  }
+  const sign=type==='買'?-1:1;
+  const r2=rate||(mkt==='美股'?31.7:1);
+  const ntAmt=mkt==='台股'?sign*qty*price:sign*qty*price*r2;
+  const usAmt=mkt==='美股'?sign*qty*price:null;
+  const totalFee=feeVal+taxVal;
+
+  try{
+    const[r]=await api('POST','trades',[{trade_date:date,market:mkt,symbol:sym,type,qty,price,us_amount:usAmt,nt_amount:ntAmt,exchange_rate:rate,pnl_nt_app:pnlNt,fee_nt:totalFee,note}]);
+    trades.push(r);trades.sort((a,b)=>a.trade_date.localeCompare(b.trade_date)||a.id-b.id);
+    closeModal('add');clearForm();expandedKey=null;
+    populateYears();renderAll();
+    const p=document.querySelector('.page.active').id.replace('page-','');
+    if(p==='trades')renderTrades();
+    if(p==='pnl')renderPnl();
+  }catch(e){alert('新增失敗：'+e.message);}
+}
+
+function clearForm(){['f-sym','f-qty','f-price','f-rate','f-pnl-nt','f-fee','f-tax','f-note'].forEach(id=>document.getElementById(id).value='');}
+function clearFuForm(){['fu-product','fu-qty','fu-price','fu-pnl','f-note'].forEach(id=>document.getElementById(id).value='');}
+
+async function deleteTrade(id){
+  if(!confirm('確定刪除？'))return;
+  await api('DELETE','trades','',`id=eq.${id}`);
+  trades=trades.filter(t=>t.id!==id);
+  expandedKey=null;renderAll();renderTrades();
+}
+async function deleteFuture(id){
+  if(!confirm('確定刪除？'))return;
+  await api('DELETE','futures','',`id=eq.${id}`);
+  futures=futures.filter(f=>f.id!==id);
+  renderHoldings();renderTrades();
+}
+
+// ─── MAIN TAB SWITCH ────────────────────────────────────
+function switchMain(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const idx={holdings:0,trades:1,pnl:2,import:3}[name];
+  document.querySelectorAll('.main-tab')[idx].classList.add('active');
+  if(name==='trades'){populateYears();renderTrades();}
+  if(name==='pnl')renderPnl();
+  if(name==='import')renderImport();
+}
+
+// ─── IMPORT ─────────────────────────────────────────────
+async function renderImport(){
+  document.getElementById('db-body').innerHTML=
+    `<tr><td class="m">trades</td><td class="m g">${trades.length} 筆</td></tr>
+     <tr><td class="m">futures</td><td class="m g">${futures.length} 筆</td></tr>`;
+}
+const HIST=[{"trade_date":"2024-03-29","actual_date":"2024-04-02","market":"台股","symbol":"台00940","type":"買","qty":20000.0,"price":10.0,"us_amount":null,"nt_amount":-200000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-07-09","actual_date":"2024-07-11","market":"台股","symbol":"台00940","type":"賣","qty":5000.0,"price":10.22,"us_amount":null,"nt_amount":51100.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":1029.0},{"trade_date":"2024-07-26","actual_date":"2024-07-30","market":"台股","symbol":"台00878","type":"買","qty":2042.0,"price":21.9398,"us_amount":null,"nt_amount":-44801.0716,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-09-04","actual_date":"2024-09-06","market":"台股","symbol":"台00919","type":"買","qty":2000.0,"price":24.07,"us_amount":null,"nt_amount":-48140.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-09-09","actual_date":"2024-09-11","market":"台股","symbol":"台00919","type":"買","qty":1000.0,"price":23.95,"us_amount":null,"nt_amount":-23950.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-10-04","actual_date":"2024-10-08","market":"台股","symbol":"台00919","type":"買","qty":1000.0,"price":23.3,"us_amount":null,"nt_amount":-23300.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-11-19","actual_date":"2024-11-21","market":"台股","symbol":"廣達","type":"買","qty":100.0,"price":291.0,"us_amount":null,"nt_amount":-29100.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-11-28","actual_date":"2024-12-02","market":"台股","symbol":"鴻海","type":"買","qty":100.0,"price":195.0,"us_amount":null,"nt_amount":-19500.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-12-16","actual_date":"2024-12-18","market":"台股","symbol":"台積電","type":"買","qty":10.0,"price":958.2,"us_amount":null,"nt_amount":-9582.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-12-16","actual_date":"2024-12-18","market":"台股","symbol":"鴻海","type":"買","qty":100.0,"price":182.5,"us_amount":null,"nt_amount":-18250.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-12-16","actual_date":"2024-12-18","market":"台股","symbol":"廣達","type":"買","qty":100.0,"price":276.0,"us_amount":null,"nt_amount":-27600.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2024-12-16","actual_date":"2024-12-18","market":"台股","symbol":"鈊象","type":"買","qty":10.0,"price":993.0,"us_amount":null,"nt_amount":-9930.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-01-14","actual_date":"2025-01-16","market":"台股","symbol":"鈊象","type":"買","qty":10.0,"price":932.0,"us_amount":null,"nt_amount":-9320.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-01-14","actual_date":"2025-01-16","market":"台股","symbol":"台00919","type":"買","qty":1000.0,"price":22.87,"us_amount":null,"nt_amount":-22870.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-01-14","actual_date":"2025-01-16","market":"台股","symbol":"台00919","type":"買","qty":1000.0,"price":22.87,"us_amount":null,"nt_amount":-22870.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-02-03","actual_date":"2025-02-05","market":"台股","symbol":"鴻海","type":"買","qty":100.0,"price":166.0,"us_amount":null,"nt_amount":-16600.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-02-03","actual_date":"2025-02-05","market":"台股","symbol":"廣達","type":"買","qty":100.0,"price":243.0,"us_amount":null,"nt_amount":-24300.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-04-08","actual_date":"2025-04-10","market":"台股","symbol":"台00919","type":"買","qty":1000.0,"price":19.3,"us_amount":null,"nt_amount":-19300.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-06-13","actual_date":"2025-06-17","market":"台股","symbol":"台00940","type":"賣","qty":5000.0,"price":9.01,"us_amount":null,"nt_amount":45050.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-5012.0},{"trade_date":"2025-07-09","actual_date":"2025-07-11","market":"台股","symbol":"台00940","type":"賣","qty":5000.0,"price":9.04,"us_amount":null,"nt_amount":45200.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-4863.0},{"trade_date":"2025-07-11","actual_date":"2025-07-14","market":"美股","symbol":"ONDS","type":"買","qty":200.0,"price":2.12,"us_amount":-424.0,"nt_amount":-13440.8,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-07-22","actual_date":"2025-07-24","market":"美股","symbol":"OSCR","type":"賣","qty":50.0,"price":13.3,"us_amount":665.0,"nt_amount":21080.5,"exchange_rate":31.7,"pnl_us_app":-169.49,"pnl_nt_app":-5372.833},{"trade_date":"2025-09-08","actual_date":"2025-09-09","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":6.3,"us_amount":-630.0,"nt_amount":-19971.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-09-09","actual_date":"2025-09-10","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":5.27,"us_amount":-527.0,"nt_amount":-16705.9,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-09-16","actual_date":"2025-09-18","market":"台股","symbol":"台00940","type":"賣","qty":5000.0,"price":9.44,"us_amount":null,"nt_amount":47200.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-2865.0},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"台股","symbol":"台0050","type":"買","qty":500.0,"price":60.0,"us_amount":null,"nt_amount":-30000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"台股","symbol":"廣達","type":"賣","qty":100.0,"price":295.5,"us_amount":null,"nt_amount":29550.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":340.0},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"台股","symbol":"鴻海","type":"賣","qty":100.0,"price":226.5,"us_amount":null,"nt_amount":22650.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":3067.0},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"台股","symbol":"台00878","type":"賣","qty":42.0,"price":21.24,"us_amount":null,"nt_amount":892.08,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-31.0},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"台股","symbol":"台00878","type":"賣","qty":2000.0,"price":21.21,"us_amount":null,"nt_amount":42420.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-1526.0},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"SOFI","type":"賣","qty":100.0,"price":25.52,"us_amount":2552.0,"nt_amount":80898.4,"exchange_rate":31.7,"pnl_us_app":1211.81,"pnl_nt_app":38414.377},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"PLTR","type":"賣","qty":2.0,"price":178.43,"us_amount":356.86,"nt_amount":11312.462,"exchange_rate":31.7,"pnl_us_app":186.21,"pnl_nt_app":5902.857},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"LUNR","type":"賣","qty":220.0,"price":11.3001,"us_amount":2486.022,"nt_amount":78806.8974,"exchange_rate":31.7,"pnl_us_app":474.63,"pnl_nt_app":15045.771},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"HIMS","type":"賣","qty":20.0,"price":54.72,"us_amount":1094.4,"nt_amount":34692.48,"exchange_rate":31.7,"pnl_us_app":87.91,"pnl_nt_app":2786.747},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"AMZN","type":"賣","qty":1.0,"price":223.39,"us_amount":223.39,"nt_amount":7081.463,"exchange_rate":31.7,"pnl_us_app":-7.04,"pnl_nt_app":-223.168},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"AMZN","type":"賣","qty":2.02031,"price":223.24,"us_amount":451.0140044,"nt_amount":14297.14394,"exchange_rate":31.7,"pnl_us_app":29.86,"pnl_nt_app":946.562},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"AAPL","type":"賣","qty":3.0,"price":258.3312,"us_amount":774.9936,"nt_amount":24567.29712,"exchange_rate":31.7,"pnl_us_app":99.12,"pnl_nt_app":3142.104},{"trade_date":"2025-10-03","actual_date":"2025-10-07","market":"美股","symbol":"AAPL","type":"賣","qty":3.23769,"price":258.4425,"us_amount":836.7566978,"nt_amount":26525.18732,"exchange_rate":31.7,"pnl_us_app":249.01,"pnl_nt_app":7893.617},{"trade_date":"2025-10-06","actual_date":"2025-10-07","market":"美股","symbol":"UAMY","type":"買","qty":100.0,"price":7.97,"us_amount":-797.0,"nt_amount":-25264.9,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-06","actual_date":"2025-10-07","market":"美股","symbol":"ABAT","type":"買","qty":100.0,"price":5.53,"us_amount":-553.0,"nt_amount":-17530.1,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-07","actual_date":"2025-10-08","market":"美股","symbol":"TMQ","type":"買","qty":100.0,"price":7.49,"us_amount":-749.0,"nt_amount":-23743.3,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-07","actual_date":"2025-10-08","market":"美股","symbol":"KOPN","type":"買","qty":200.0,"price":3.51,"us_amount":-702.0,"nt_amount":-22253.4,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-08","actual_date":"2025-10-09","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":10.7699,"us_amount":-1076.99,"nt_amount":-34140.583,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-10","actual_date":"2025-10-13","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":9.59,"us_amount":-479.5,"nt_amount":-15200.15,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-10","actual_date":"2025-10-13","market":"美股","symbol":"ONMD","type":"買","qty":200.0,"price":3.22,"us_amount":-644.0,"nt_amount":-20414.8,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-10","actual_date":"2025-10-13","market":"美股","symbol":"UUUU","type":"買","qty":30.0,"price":20.9,"us_amount":-627.0,"nt_amount":-19875.9,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-10","actual_date":"2025-10-14","market":"美股","symbol":"KOPN","type":"賣","qty":100.0,"price":3.01,"us_amount":301.0,"nt_amount":9541.7,"exchange_rate":31.7,"pnl_us_app":-50.65,"pnl_nt_app":-1605.605},{"trade_date":"2025-10-10","actual_date":"2025-10-14","market":"美股","symbol":"KOPN","type":"賣","qty":100.0,"price":3.07,"us_amount":307.0,"nt_amount":9731.9,"exchange_rate":31.7,"pnl_us_app":-44.66,"pnl_nt_app":-1415.722},{"trade_date":"2025-10-13","actual_date":"2025-10-14","market":"美股","symbol":"ABAT","type":"買","qty":30.0,"price":9.0,"us_amount":-270.0,"nt_amount":-8559.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-13","actual_date":"2025-10-14","market":"美股","symbol":"UAMY","type":"買","qty":30.0,"price":15.0,"us_amount":-450.0,"nt_amount":-14265.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-13","actual_date":"2025-10-14","market":"美股","symbol":"ELBM","type":"買","qty":200.0,"price":4.8,"us_amount":-960.0,"nt_amount":-30432.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-15","actual_date":"2025-10-17","market":"美股","symbol":"ELBM","type":"賣","qty":200.0,"price":2.51,"us_amount":502.0,"nt_amount":15913.4,"exchange_rate":31.7,"pnl_us_app":-459.04,"pnl_nt_app":-14551.568},{"trade_date":"2025-10-16","actual_date":"2025-10-20","market":"美股","symbol":"ABAT","type":"賣","qty":130.0,"price":6.53,"us_amount":848.9,"nt_amount":26910.13,"exchange_rate":31.7,"pnl_us_app":24.23,"pnl_nt_app":768.091},{"trade_date":"2025-10-17","actual_date":"2025-10-21","market":"台股","symbol":"台積電","type":"買","qty":10.0,"price":1460.0,"us_amount":null,"nt_amount":-14600.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-17","actual_date":"2025-10-20","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":8.15,"us_amount":-407.5,"nt_amount":-12917.75,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-17","actual_date":"2025-10-20","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":7.79,"us_amount":-389.5,"nt_amount":-12347.15,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-17","actual_date":"2025-10-21","market":"美股","symbol":"UAMY","type":"賣","qty":130.0,"price":11.78,"us_amount":1531.4,"nt_amount":48545.38,"exchange_rate":31.7,"pnl_us_app":281.62,"pnl_nt_app":8927.354},{"trade_date":"2025-10-17","actual_date":"2025-10-21","market":"美股","symbol":"TMQ","type":"賣","qty":100.0,"price":6.93,"us_amount":693.0,"nt_amount":21968.1,"exchange_rate":31.7,"pnl_us_app":-57.44,"pnl_nt_app":-1820.848},{"trade_date":"2025-10-17","actual_date":"2025-10-21","market":"美股","symbol":"ONMD","type":"賣","qty":200.0,"price":2.54,"us_amount":508.0,"nt_amount":16103.6,"exchange_rate":31.7,"pnl_us_app":-137.15,"pnl_nt_app":-4347.655},{"trade_date":"2025-10-17","actual_date":"2025-10-21","market":"美股","symbol":"LAC","type":"賣","qty":100.0,"price":7.0702,"us_amount":707.02,"nt_amount":22412.534,"exchange_rate":31.7,"pnl_us_app":9.64,"pnl_nt_app":305.588},{"trade_date":"2025-10-23","actual_date":"2025-10-24","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":6.83,"us_amount":-341.5,"nt_amount":-10825.55,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-10-30","actual_date":"2025-10-31","market":"美股","symbol":"SOFI","type":"買","qty":10.0,"price":29.97,"us_amount":-299.7,"nt_amount":-9500.49,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-03","actual_date":"2025-11-05","market":"台股","symbol":"台00919","type":"買","qty":3000.0,"price":22.7635,"us_amount":null,"nt_amount":-68290.5,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-06","actual_date":"2025-11-07","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":5.6,"us_amount":-560.0,"nt_amount":-17752.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-06","actual_date":"2025-11-07","market":"美股","symbol":"NVDA","type":"買","qty":2.0,"price":190.0,"us_amount":-380.0,"nt_amount":-12046.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-06","actual_date":"2025-11-07","market":"美股","symbol":"TSM","type":"買","qty":1.0,"price":288.0,"us_amount":-288.0,"nt_amount":-9129.6,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-06","actual_date":"2025-11-07","market":"美股","symbol":"TSLA","type":"買","qty":1.0,"price":442.8,"us_amount":-442.8,"nt_amount":-14036.76,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-07","actual_date":"2025-11-10","market":"美股","symbol":"PLTR","type":"買","qty":2.0,"price":172.5,"us_amount":-345.0,"nt_amount":-10936.5,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-07","actual_date":"2025-11-10","market":"美股","symbol":"NVDA","type":"買","qty":2.0,"price":182.0,"us_amount":-364.0,"nt_amount":-11538.8,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-07","actual_date":"2025-11-10","market":"美股","symbol":"SOFI","type":"買","qty":10.0,"price":26.0,"us_amount":-260.0,"nt_amount":-8242.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-14","actual_date":"2025-11-17","market":"美股","symbol":"TSLA","type":"買","qty":1.0,"price":400.0,"us_amount":-400.0,"nt_amount":-12680.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-14","actual_date":"2025-11-17","market":"美股","symbol":"TSLA","type":"買","qty":1.0,"price":390.0,"us_amount":-390.0,"nt_amount":-12363.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-18","actual_date":"2025-11-20","market":"台股","symbol":"台0056","type":"買","qty":1000.0,"price":35.0,"us_amount":null,"nt_amount":-35000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-18","actual_date":"2025-11-19","market":"美股","symbol":"GOOG","type":"買","qty":1.0,"price":280.0,"us_amount":-280.0,"nt_amount":-8876.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-18","actual_date":"2025-11-19","market":"美股","symbol":"SOFI","type":"買","qty":10.0,"price":26.0,"us_amount":-260.0,"nt_amount":-8242.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-20","actual_date":"2025-11-21","market":"美股","symbol":"UUUU","type":"買","qty":20.0,"price":15.65,"us_amount":-313.0,"nt_amount":-9922.1,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-21","actual_date":"2025-11-25","market":"台股","symbol":"台積電","type":"買","qty":10.0,"price":1400.0,"us_amount":null,"nt_amount":-14000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-24","actual_date":"2025-11-25","market":"美股","symbol":"PLTR","type":"買","qty":2.0,"price":158.0,"us_amount":-316.0,"nt_amount":-10017.2,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-11-24","actual_date":"2025-11-26","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.32,"us_amount":null,"nt_amount":21320.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-1588.0},{"trade_date":"2025-11-24","actual_date":"2025-11-26","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.32,"us_amount":null,"nt_amount":21320.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-2018.0},{"trade_date":"2025-11-24","actual_date":"2025-11-26","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.32,"us_amount":null,"nt_amount":21320.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-2669.0},{"trade_date":"2025-11-24","actual_date":"2025-11-26","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.32,"us_amount":null,"nt_amount":21320.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-5579.0},{"trade_date":"2025-11-26","actual_date":"2025-11-28","market":"台股","symbol":"台00919","type":"賣","qty":3000.0,"price":21.41,"us_amount":null,"nt_amount":64230.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-4158.0},{"trade_date":"2025-11-26","actual_date":"2025-11-28","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.41,"us_amount":null,"nt_amount":21410.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":2073.0},{"trade_date":"2025-11-26","actual_date":"2025-11-28","market":"台股","symbol":"台00919","type":"賣","qty":1000.0,"price":21.41,"us_amount":null,"nt_amount":21410.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-1499.0},{"trade_date":"2025-12-01","actual_date":"2025-12-03","market":"台股","symbol":"台00919","type":"買","qty":3000.0,"price":22.763,"us_amount":null,"nt_amount":-68289.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-12-12","actual_date":"2025-12-15","market":"美股","symbol":"ORCL","type":"買","qty":5.0,"price":192.5,"us_amount":-962.5,"nt_amount":-30511.25,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-12-17","actual_date":"2025-12-18","market":"美股","symbol":"ORCL","type":"買","qty":4.0,"price":180.0,"us_amount":-720.0,"nt_amount":-22824.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-12-17","actual_date":"2025-12-18","market":"美股","symbol":"NVDX","type":"買","qty":40.0,"price":15.2,"us_amount":-608.0,"nt_amount":-19273.6,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2025-12-22","actual_date":"2025-12-24","market":"台股","symbol":"台00919","type":"賣","qty":3000.0,"price":22.5,"us_amount":null,"nt_amount":67500.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-891.0},{"trade_date":"2026-01-02","actual_date":"2026-01-06","market":"台股","symbol":"台00919","type":"買","qty":7382.0,"price":22.7627,"us_amount":null,"nt_amount":-168034.2514,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-02","actual_date":"2026-01-06","market":"台股","symbol":"台0056","type":"買","qty":4.0,"price":36.5,"us_amount":null,"nt_amount":-146.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-03","actual_date":"2026-01-06","market":"美股","symbol":"ONDS","type":"賣","qty":100.0,"price":10.55,"us_amount":1055.0,"nt_amount":33443.5,"exchange_rate":31.7,"pnl_us_app":841.73,"pnl_nt_app":26682.841},{"trade_date":"2026-01-05","actual_date":"2026-01-07","market":"台股","symbol":"台00919","type":"賣","qty":2000.0,"price":22.46,"us_amount":null,"nt_amount":44920.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-673.0},{"trade_date":"2026-01-06","actual_date":"2026-01-08","market":"台股","symbol":"台00919","type":"賣","qty":5000.0,"price":22.53,"us_amount":null,"nt_amount":112650.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-1338.0},{"trade_date":"2026-01-06","actual_date":"2026-01-08","market":"台股","symbol":"台00919","type":"賣","qty":382.0,"price":22.52,"us_amount":null,"nt_amount":8602.64,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-106.0},{"trade_date":"2026-01-08","actual_date":"2026-01-09","market":"美股","symbol":"NVDX","type":"買","qty":40.0,"price":17.0,"us_amount":-680.0,"nt_amount":-21556.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-08","actual_date":"2026-01-09","market":"美股","symbol":"TSLL","type":"買","qty":100.0,"price":17.6,"us_amount":-1760.0,"nt_amount":-55792.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-08","actual_date":"2026-01-09","market":"美股","symbol":"CRWV","type":"買","qty":10.0,"price":78.0,"us_amount":-780.0,"nt_amount":-24726.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-09","actual_date":"2026-01-13","market":"台股","symbol":"台0056","type":"賣","qty":1000.0,"price":37.22,"us_amount":null,"nt_amount":37220.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":2156.0},{"trade_date":"2026-01-13","actual_date":"2026-01-14","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":13.0,"us_amount":-650.0,"nt_amount":-20605.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-14","actual_date":"2026-01-15","market":"美股","symbol":"ORCX","type":"買","qty":70.0,"price":17.62,"us_amount":-1233.4,"nt_amount":-39098.78,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-14","actual_date":"2026-01-15","market":"美股","symbol":"ONDS","type":"買","qty":50.0,"price":13.0,"us_amount":-650.0,"nt_amount":-20605.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-15","actual_date":"2026-01-19","market":"台股","symbol":"台0056","type":"賣","qty":4.0,"price":37.99,"us_amount":null,"nt_amount":151.96,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-16","actual_date":"2026-01-20","market":"台股","symbol":"長廣","type":"買","qty":1000.0,"price":125.0,"us_amount":null,"nt_amount":-125000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-16","actual_date":"2026-01-19","market":"美股","symbol":"MU","type":"買","qty":2.0,"price":360.0,"us_amount":-720.0,"nt_amount":-22824.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-16","actual_date":"2026-01-19","market":"美股","symbol":"CRWV","type":"買","qty":10.0,"price":97.0,"us_amount":-970.0,"nt_amount":-30749.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-16","actual_date":"2026-01-19","market":"美股","symbol":"ORCX","type":"買","qty":30.0,"price":15.9,"us_amount":-477.0,"nt_amount":-15120.9,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-20","actual_date":"2026-01-22","market":"台股","symbol":"鴻海","type":"賣","qty":200.0,"price":224.5,"us_amount":null,"nt_amount":44900.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":9886.0},{"trade_date":"2026-01-21","actual_date":"2026-01-23","market":"美股","symbol":"TSM","type":"賣","qty":0.79453,"price":333.53,"us_amount":264.9995909,"nt_amount":8400.487032,"exchange_rate":31.7,"pnl_us_app":104.49,"pnl_nt_app":3312.333},{"trade_date":"2026-01-21","actual_date":"2026-01-23","market":"美股","symbol":"ORCX","type":"賣","qty":70.0,"price":13.835,"us_amount":968.45,"nt_amount":30699.865,"exchange_rate":31.7,"pnl_us_app":-270.95,"pnl_nt_app":-8589.115},{"trade_date":"2026-01-21","actual_date":"2026-01-23","market":"美股","symbol":"ORCL","type":"賣","qty":5.0,"price":175.85,"us_amount":879.25,"nt_amount":27872.225,"exchange_rate":31.7,"pnl_us_app":-84.91,"pnl_nt_app":-2691.647},{"trade_date":"2026-01-21","actual_date":"2026-01-23","market":"美股","symbol":"UUUU","type":"賣","qty":50.0,"price":22.5,"us_amount":1125.0,"nt_amount":35662.5,"exchange_rate":31.7,"pnl_us_app":183.16,"pnl_nt_app":5806.172},{"trade_date":"2026-01-22","actual_date":"2026-01-26","market":"台股","symbol":"廣達","type":"賣","qty":200.0,"price":280.0,"us_amount":null,"nt_amount":56000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":3890.0},{"trade_date":"2026-01-22","actual_date":"2026-01-26","market":"台股","symbol":"南亞科","type":"買","qty":200.0,"price":270.25,"us_amount":null,"nt_amount":-54050.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-26","actual_date":"2026-01-28","market":"台股","symbol":"長廣","type":"賣","qty":500.0,"price":370.0,"us_amount":null,"nt_amount":185000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":121872.0},{"trade_date":"2026-01-27","actual_date":"2026-01-29","market":"美股","symbol":"UNH","type":"賣","qty":4.0,"price":286.0,"us_amount":1144.0,"nt_amount":36264.8,"exchange_rate":31.7,"pnl_us_app":-107.97,"pnl_nt_app":-3422.649},{"trade_date":"2026-01-27","actual_date":"2026-01-29","market":"美股","symbol":"ONDS","type":"賣","qty":100.0,"price":11.331,"us_amount":1133.1,"nt_amount":35919.27,"exchange_rate":31.7,"pnl_us_app":918.98,"pnl_nt_app":29131.666},{"trade_date":"2026-01-27","actual_date":"2026-01-28","market":"美股","symbol":"ONDS","type":"買","qty":200.0,"price":11.5,"us_amount":-2300.0,"nt_amount":-72910.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-28","actual_date":"2026-01-30","market":"台股","symbol":"長廣","type":"賣","qty":100.0,"price":422.5,"us_amount":null,"nt_amount":42250.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":29608.0},{"trade_date":"2026-01-29","actual_date":"2026-02-02","market":"美股","symbol":"NVDX","type":"賣","qty":40.0,"price":17.81,"us_amount":712.4,"nt_amount":22583.08,"exchange_rate":31.7,"pnl_us_app":98.4,"pnl_nt_app":3119.28},{"trade_date":"2026-01-29","actual_date":"2026-02-02","market":"美股","symbol":"CRWV","type":"賣","qty":10.0,"price":106.6,"us_amount":1066.0,"nt_amount":33792.2,"exchange_rate":31.7,"pnl_us_app":284.53,"pnl_nt_app":9019.601},{"trade_date":"2026-01-29","actual_date":"2026-01-30","market":"美股","symbol":"MU","type":"買","qty":2.0,"price":430.0,"us_amount":-860.0,"nt_amount":-27262.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-29","actual_date":"2026-02-02","market":"台股","symbol":"鈊象","type":"賣","qty":20.0,"price":734.0,"us_amount":null,"nt_amount":14680.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-4625.0},{"trade_date":"2026-01-29","actual_date":"2026-02-02","market":"台股","symbol":"金居","type":"買","qty":100.0,"price":263.0,"us_amount":null,"nt_amount":-26300.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-30","actual_date":"2026-02-02","market":"美股","symbol":"VST","type":"買","qty":4.0,"price":161.0,"us_amount":-644.0,"nt_amount":-20414.8,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-30","actual_date":"2026-02-02","market":"美股","symbol":"PLTR","type":"買","qty":2.0,"price":150.0,"us_amount":-300.0,"nt_amount":-9510.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-01-30","actual_date":"2026-02-03","market":"台股","symbol":"長廣","type":"賣","qty":100.0,"price":419.0,"us_amount":null,"nt_amount":41900.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":29259.0},{"trade_date":"2026-02-02","actual_date":"2026-02-04","market":"台股","symbol":"台0050","type":"買","qty":42.0,"price":71.19,"us_amount":null,"nt_amount":-2989.98,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-03","actual_date":"2026-02-05","market":"台股","symbol":"啟碁","type":"買","qty":100.0,"price":199.0,"us_amount":null,"nt_amount":-19900.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-03","actual_date":"2026-02-05","market":"台股","symbol":"華通","type":"買","qty":100.0,"price":180.0,"us_amount":null,"nt_amount":-18000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-03","actual_date":"2026-02-05","market":"美股","symbol":"ORCL","type":"賣","qty":4.0,"price":157.03,"us_amount":628.12,"nt_amount":19911.404,"exchange_rate":31.7,"pnl_us_app":-93.1,"pnl_nt_app":-2951.27},{"trade_date":"2026-02-03","actual_date":"2026-02-05","market":"美股","symbol":"ORCX","type":"賣","qty":30.0,"price":10.89,"us_amount":326.7,"nt_amount":10356.39,"exchange_rate":31.7,"pnl_us_app":-156.3,"pnl_nt_app":-4954.71},{"trade_date":"2026-02-03","actual_date":"2026-02-04","market":"美股","symbol":"RKLB","type":"買","qty":10.0,"price":76.5,"us_amount":-765.0,"nt_amount":-24250.5,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-03","actual_date":"2026-02-04","market":"美股","symbol":"ASTS","type":"買","qty":7.0,"price":106.67,"us_amount":-746.69,"nt_amount":-23670.073,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-04","actual_date":"2026-02-05","market":"美股","symbol":"MU","type":"買","qty":2.0,"price":385.0,"us_amount":-770.0,"nt_amount":-24409.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-04","actual_date":"2026-02-05","market":"美股","symbol":"TSLA","type":"買","qty":1.0,"price":400.0,"us_amount":-400.0,"nt_amount":-12680.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-04","actual_date":"2026-02-05","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":9.4,"us_amount":-940.0,"nt_amount":-29798.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-04","actual_date":"2026-02-05","market":"美股","symbol":"MU","type":"買","qty":2.0,"price":365.0,"us_amount":-730.0,"nt_amount":-23141.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-09","market":"台股","symbol":"燿華","type":"買","qty":250.0,"price":57.5,"us_amount":null,"nt_amount":-14375.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-09","market":"台股","symbol":"啟碁","type":"買","qty":100.0,"price":187.5,"us_amount":null,"nt_amount":-18750.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-06","market":"美股","symbol":"GOOG","type":"買","qty":1.0,"price":320.0,"us_amount":-320.0,"nt_amount":-10144.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-06","market":"美股","symbol":"CRWV","type":"買","qty":10.0,"price":80.0,"us_amount":-800.0,"nt_amount":-25360.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-06","market":"美股","symbol":"PLTR","type":"買","qty":4.0,"price":132.0,"us_amount":-528.0,"nt_amount":-16737.6,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-06","market":"美股","symbol":"ONDS","type":"買","qty":100.0,"price":8.7,"us_amount":-870.0,"nt_amount":-27579.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-05","actual_date":"2026-02-06","market":"美股","symbol":"TSLA","type":"買","qty":2.0,"price":395.0,"us_amount":-790.0,"nt_amount":-25043.0,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-06","actual_date":"2026-02-10","market":"台股","symbol":"啟碁","type":"買","qty":100.0,"price":174.5,"us_amount":null,"nt_amount":-17450.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-06","actual_date":"2026-02-10","market":"台股","symbol":"燿華","type":"買","qty":150.0,"price":53.8,"us_amount":null,"nt_amount":-8070.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-06","actual_date":"2026-02-10","market":"台股","symbol":"昇達科","type":"買","qty":20.0,"price":1260.0,"us_amount":null,"nt_amount":-25200.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-11","actual_date":"2026-02-13","market":"台股","symbol":"台境","type":"買","qty":5000.0,"price":18.3,"us_amount":null,"nt_amount":-91500.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-12","actual_date":"2026-02-16","market":"美股","symbol":"NVDX","type":"賣","qty":40.0,"price":17.171,"us_amount":686.84,"nt_amount":21772.828,"exchange_rate":31.7,"pnl_us_app":0.84,"pnl_nt_app":26.628},{"trade_date":"2026-02-17","actual_date":"2026-02-19","market":"美股","symbol":"TSLL","type":"賣","qty":30.0,"price":15.55,"us_amount":466.5,"nt_amount":14788.05,"exchange_rate":31.7,"pnl_us_app":-65.4,"pnl_nt_app":-2073.18},{"trade_date":"2026-02-17","actual_date":"2026-02-19","market":"美股","symbol":"TSLL","type":"賣","qty":20.0,"price":14.81,"us_amount":296.2,"nt_amount":9389.54,"exchange_rate":31.7,"pnl_us_app":-59.4,"pnl_nt_app":-1882.98},{"trade_date":"2026-02-21","actual_date":"2026-02-23","market":"美股","symbol":"LITE","type":"買","qty":1.0,"price":669.6,"us_amount":-669.6,"nt_amount":-21226.32,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-24","actual_date":"2026-02-26","market":"台股","symbol":"台0050","type":"買","qty":6.0,"price":78.97,"us_amount":null,"nt_amount":-473.82,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-02-25","actual_date":"2026-02-27","market":"台股","symbol":"金居","type":"賣","qty":100.0,"price":286.0,"us_amount":null,"nt_amount":28600.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":2194.0},{"trade_date":"2026-02-25","actual_date":"2026-02-27","market":"台股","symbol":"燿華","type":"賣","qty":400.0,"price":61.0,"us_amount":null,"nt_amount":24400.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":1865.0},{"trade_date":"2026-02-25","actual_date":"2026-02-27","market":"台股","symbol":"華通","type":"賣","qty":100.0,"price":210.5,"us_amount":null,"nt_amount":21050.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":2972.0},{"trade_date":"2026-02-25","actual_date":"2026-02-27","market":"台股","symbol":"昇達科","type":"賣","qty":20.0,"price":1520.0,"us_amount":null,"nt_amount":30400.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":5087.0},{"trade_date":"2026-03-02","actual_date":"2026-03-04","market":"台股","symbol":"台0050","type":"買","qty":37.0,"price":80.58,"us_amount":null,"nt_amount":-2981.46,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-03-03","actual_date":"2026-03-05","market":"台股","symbol":"台境","type":"買","qty":5000.0,"price":19.0,"us_amount":null,"nt_amount":-95000.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-03-20","actual_date":"2026-03-24","market":"美股","symbol":"MU","type":"賣","qty":4.0,"price":420.0,"us_amount":1680.0,"nt_amount":53256.0,"exchange_rate":31.7,"pnl_us_app":97.39,"pnl_nt_app":3087.263},{"trade_date":"2026-03-30","actual_date":"2026-03-31","market":"美股","symbol":"ASTS","type":"買","qty":3.0,"price":77.49,"us_amount":-232.47,"nt_amount":-7369.299,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-03-30","actual_date":"2026-03-31","market":"美股","symbol":"GOOG","type":"買","qty":2.0,"price":275.7,"us_amount":-551.4,"nt_amount":-17479.38,"exchange_rate":31.7,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-03-30","actual_date":"2026-04-01","market":"美股","symbol":"TSLL","type":"賣","qty":20.0,"price":11.7,"us_amount":234.0,"nt_amount":7417.8,"exchange_rate":31.7,"pnl_us_app":-121.6,"pnl_nt_app":-3854.72},{"trade_date":"2026-04-01","actual_date":"2026-04-03","market":"台股","symbol":"台0050","type":"買","qty":39.0,"price":75.27,"us_amount":null,"nt_amount":-2935.53,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":null},{"trade_date":"2026-04-20","actual_date":"2026-04-22","market":"台股","symbol":"南亞科","type":"賣","qty":100.0,"price":205.0,"us_amount":null,"nt_amount":20500.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-7129.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"台境","type":"賣","qty":5000.0,"price":17.65,"us_amount":null,"nt_amount":88250.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-7086.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"台境","type":"賣","qty":5000.0,"price":18.1,"us_amount":null,"nt_amount":90500.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-1343.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"啟碁","type":"賣","qty":100.0,"price":218.5,"us_amount":null,"nt_amount":21850.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":4321.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"啟碁","type":"賣","qty":100.0,"price":218.5,"us_amount":null,"nt_amount":21850.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":3019.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"啟碁","type":"賣","qty":100.0,"price":218.5,"us_amount":null,"nt_amount":21850.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":1869.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"台股","symbol":"南亞科","type":"賣","qty":100.0,"price":207.5,"us_amount":null,"nt_amount":20750.0,"exchange_rate":null,"pnl_us_app":null,"pnl_nt_app":-5830.0},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"美股","symbol":"VST","type":"賣","qty":4.0,"price":157.59,"us_amount":630.36,"nt_amount":19982.412,"exchange_rate":31.7,"pnl_us_app":-14.68,"pnl_nt_app":-465.356},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"美股","symbol":"UNH","type":"賣","qty":3.0,"price":353.55,"us_amount":1060.65,"nt_amount":33622.605,"exchange_rate":31.7,"pnl_us_app":141.15,"pnl_nt_app":4474.455},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"美股","symbol":"RKLB","type":"賣","qty":10.0,"price":87.8,"us_amount":878.0,"nt_amount":27832.6,"exchange_rate":31.7,"pnl_us_app":111.67,"pnl_nt_app":3539.939},{"trade_date":"2026-04-23","actual_date":"2026-04-27","market":"美股","symbol":"CRWV","type":"賣","qty":10.0,"price":122.85,"us_amount":1228.5,"nt_amount":38943.45,"exchange_rate":31.7,"pnl_us_app":256.71,"pnl_nt_app":8137.707}];
+
+async function importHistorical(){
+  if(trades.length>5&&!confirm(`資料庫已有 ${trades.length} 筆，確定要重複匯入？`))return;
+  document.getElementById('import-wrap').style.display='block';
+  const fill=document.getElementById('import-fill');
+  const msg=document.getElementById('import-msg');
+  const BATCH=25,total=HIST.length;let done=0;
+  for(let i=0;i<total;i+=BATCH){
+    const batch=HIST.slice(i,i+BATCH);
+    msg.textContent=`匯入中 ${Math.min(i+BATCH,total)}/${total}...`;
+    fill.style.width=`${Math.min(i+BATCH,total)/total*100}%`;
+    try{await api('POST','trades',batch);done+=batch.length;}
+    catch(e){msg.textContent='錯誤：'+e.message;return;}
+  }
+  msg.textContent=`✅ 完成！匯入 ${done} 筆`;fill.style.width='100%';
+  trades=await api('GET','trades','','select=*&order=trade_date.asc,id.asc&limit=5000');
+  populateYears();renderAll();renderImport();
+}
+
+init();
+</script>
+</body>
+</html>
