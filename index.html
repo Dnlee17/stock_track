@@ -1145,6 +1145,17 @@ async function importHistorical(){
   trades=await api('GET','trades','','select=*&order=trade_date.asc,id.asc&limit=5000');
   populateYears();renderAll();renderImport();
 }
+// 密碼保護
+const PASS = '171123';
+const saved = localStorage.getItem('app_auth');
+if (saved !== PASS) {
+  const input = prompt('請輸入密碼');
+  if (input !== PASS) {
+    document.body.innerHTML = '<div style="text-align:center;padding:40px;font-size:18px;">密碼錯誤</div>';
+    throw new Error('unauthorized');
+  }
+  localStorage.setItem('app_auth', PASS);
+}
 
 init();
 </script>
